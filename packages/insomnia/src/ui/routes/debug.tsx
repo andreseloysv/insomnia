@@ -193,7 +193,7 @@ export const Debug: FC = () => {
     });
   }, []);
 
-  const { settings } = useRouteLoaderData('root') as OrganizationLoaderData;
+  const { settings } = useRouteLoaderData('/organization') as OrganizationLoaderData;
   const [runningRequests, setRunningRequests] = useState<
     Record<string, boolean>
   >({});
