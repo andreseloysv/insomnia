@@ -82,12 +82,12 @@ import {
   useRequestGroupMetaPatcher,
   useRequestMetaPatcher,
 } from '../hooks/use-request';
-import { OrganizationLoaderData } from './organization';
 import {
   GrpcRequestLoaderData,
   RequestLoaderData,
   WebSocketRequestLoaderData,
 } from './request';
+import { useRootLoaderData } from './root';
 import { WorkspaceLoaderData } from './workspace';
 
 export interface GrpcMessage {
@@ -197,7 +197,7 @@ export const Debug: FC = () => {
     });
   }, []);
 
-  const { settings } = useRouteLoaderData('/organization') as OrganizationLoaderData;
+  const { settings } = useRootLoaderData();
   const [runningRequests, setRunningRequests] = useState<
     Record<string, boolean>
   >({});
