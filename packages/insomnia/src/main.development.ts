@@ -9,15 +9,13 @@ import { userDataFolder } from '../config/config.json';
 import { changelogUrl, getAppVersion, isDevelopment, isMac } from './common/constants';
 import { database } from './common/database';
 import log, { initializeLogging } from './common/log';
-import { backupIfNewerVersionAvailable } from './main/backup';
 import { registerElectronHandlers } from './main/ipc/electron';
 import { registergRPCHandlers } from './main/ipc/grpc';
 import { registerMainHandlers } from './main/ipc/main';
 import { registerCurlHandlers } from './main/network/curl';
 import { registerWebSocketHandlers } from './main/network/websocket';
-import { initializeSentry, sentryWatchAnalyticsEnabled } from './main/sentry';
+import { initializeSentry } from './main/sentry';
 import { checkIfRestartNeeded } from './main/squirrel-startup';
-import * as updates from './main/updates';
 import * as windowUtils from './main/window-utils';
 import * as models from './models/index';
 import type { Stats } from './models/stats';
@@ -92,12 +90,8 @@ app.on('ready', async () => {
   // Init some important things first
   await database.init(models.types());
   await _createModelInstances();
-  sentryWatchAnalyticsEnabled();
   windowUtils.init();
   await _launchApp();
-
-  // Init the rest
-  await updates.init();
 });
 
 // Set as default protocol
@@ -231,7 +225,6 @@ async function _trackStats() {
   });
 
   ipcMain.once('halfSecondAfterAppStart', async () => {
-    backupIfNewerVersionAvailable();
     const { currentVersion, launches, lastVersion } = stats;
 
     const firstLaunch = launches === 1;

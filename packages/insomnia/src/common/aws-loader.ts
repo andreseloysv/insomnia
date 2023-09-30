@@ -1,5 +1,9 @@
 import { GetParametersCommand, GetParametersCommandInput, SSMClient } from '@aws-sdk/client-ssm';
+import { fromIni } from '@aws-sdk/credential-provider-ini';
 import { Environment } from '../models/environment';
+import { readFileSync } from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 const AWS_PREFIX = 'aws';
 
@@ -12,10 +16,52 @@ type EnvironmentContent = {
   value: string;
 };
 
+type AwsProfile = {
+  name: string;
+  region: string;
+};
+
+function getFirstProfileAndRegion(): AwsProfile | null {
+  const awsCredentialsPath = path.join(os.homedir(), '.aws', 'credentials');
+  try {
+    const credentialsFileContents = readFileSync(awsCredentialsPath, 'utf-8');
+    const lines = credentialsFileContents.split(/\r?\n/);
+    let currentProfile: string | null = null;
+
+    for (let line of lines) {
+      const profileMatch = line.match(/^\s*\[(.+?)\]\s*$/);
+      if (profileMatch) {
+        currentProfile = profileMatch[1];
+        continue;
+      }
+
+      if (currentProfile) {
+        const regionMatch = line.match(/^\s*region\s*=\s*(.+?)\s*$/);
+        if (regionMatch) {
+          return {
+            name: currentProfile,
+            region: regionMatch[1],
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error reading AWS credentials', error);
+  }
+
+  return null;
+}
+
 async function getAWSParameterValues(environmentContents: EnvironmentContent[]): Promise<Map<string, string>> {
   try {
     const awsPaths = environmentContents.map((path) => path.value.replace(AWS_PREFIX, ''));
-    const ssm = new SSMClient({});
+    const awsProfile = getFirstProfileAndRegion();
+    const ssm = new SSMClient({
+      region: awsProfile?.region,
+      credentials: fromIni({
+        profile: awsProfile?.name,
+      }),
+    });
     const input: GetParametersCommandInput = {
       Names: awsPaths,
       WithDecryption: true,
