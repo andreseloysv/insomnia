@@ -1,6 +1,8 @@
 import { GetParametersCommand, GetParametersCommandInput, SSMClient } from '@aws-sdk/client-ssm';
 import { Environment } from '../models/environment';
 
+const AWS_PREFIX = 'aws';
+
 type EnvironmentData = {
   [key: string]: any;
 };
@@ -12,8 +14,8 @@ type EnvironmentContent = {
 
 async function getAWSParameterValues(environmentContents: EnvironmentContent[]): Promise<Map<string, string>> {
   try {
-    const awsPaths = environmentContents.map((path) => path.value.replace('aws', ''));
-    const ssm = new SSMClient({ region: 'eu-central-1' });
+    const awsPaths = environmentContents.map((path) => path.value.replace(AWS_PREFIX, ''));
+    const ssm = new SSMClient({});
     const input: GetParametersCommandInput = {
       Names: awsPaths,
       WithDecryption: true,
@@ -37,7 +39,7 @@ async function getAWSParameterValues(environmentContents: EnvironmentContent[]):
 
 async function fetchAwsParameterValues(environmentData: EnvironmentData): Promise<Map<string, string>> {
   const awsPaths: EnvironmentContent[] = Object.entries(environmentData)
-    .filter(([, value]) => typeof value === 'string' && value.includes('aws/'))
+    .filter(([, value]) => typeof value === 'string' && value.includes(AWS_PREFIX))
     .map(([key, value]) => {
       return { key, value: value as string };
     });
@@ -45,7 +47,7 @@ async function fetchAwsParameterValues(environmentData: EnvironmentData): Promis
 }
 
 function isAwsParameter(environmentData: EnvironmentData): boolean {
-  const result = Object.entries(environmentData).filter(([, value]) => typeof value === 'string' && value.includes('aws/'));
+  const result = Object.entries(environmentData).filter(([, value]) => typeof value === 'string' && value.includes(AWS_PREFIX));
   return result.length > 0;
 }
 
